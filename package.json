@@ -3,7 +3,7 @@
   "displayName": "Clover Sync",
   "description": "Sincronizar script",
   "version": "0.0.1",
-  "publisher": "seu_nome_ou_empresa",
+  "publisher": "clover",
   "engines": {
     "vscode": "^1.95.0"
   },
@@ -33,7 +33,9 @@
   "devDependencies": {
     "@types/mocha": "^10.0.9",
     "@types/node": "20.x",
+    "@types/sockjs-client": "^1.5.4",
     "@types/vscode": "^1.95.0",
+    "@types/ws": "^8.5.13",
     "@typescript-eslint/eslint-plugin": "^8.10.0",
     "@typescript-eslint/parser": "^8.7.0",
     "@vscode/test-cli": "^0.0.10",
@@ -42,6 +44,9 @@
     "typescript": "^5.6.3"
   },
   "dependencies": {
-    "clover-sync": "file:"
+    "@stomp/stompjs": "^7.0.0",
+    "clover-sync": "file:",
+    "sockjs-client": "^1.6.1",
+    "ws": "^8.18.0"
   }
 }
