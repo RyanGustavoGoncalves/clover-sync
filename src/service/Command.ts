@@ -20,7 +20,6 @@ export class Command {
             ws.on('message', (message: string) => {
                 console.log('Mensagem recebida do frontend:', message);
                 const data = JSON.parse(message);
-                console.log('Data:', data);
                 if (data.type === 'syncFile') {
                     this.handleSyncFile(data.payload, ws);
                 }
