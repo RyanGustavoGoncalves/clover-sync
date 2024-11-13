@@ -1,9 +1,15 @@
+// StatusBarService.ts
 import * as vscode from 'vscode';
 import { StatusBar } from '../controller/StatusBar';
 import { Command } from './Command';
 
 export class StatusBarService {
-    private command = new Command();
+    private command: Command;
+
+    constructor(context: vscode.ExtensionContext) {
+        this.command = new Command(context);
+    }
+
     public updateStatusBar(isActive: boolean, statusBarItem: vscode.StatusBarItem): void {
         if (isActive) {
             statusBarItem.text = `$(sync~spin) Clover Sync - Ativo`;
@@ -16,7 +22,7 @@ export class StatusBarService {
 
     public runScript(statusBar: StatusBar): void {
         if (statusBar.isActive) {
-            this.command.runScript(statusBar);
+            // Parar a sincronização
             statusBar.isActive = false;
             vscode.window.showInformationMessage('Sincronização parada!');
             if (statusBar.terminal) {
@@ -24,12 +30,21 @@ export class StatusBarService {
                 statusBar.terminal = undefined;
             }
         } else {
+            // Iniciar a sincronização
             statusBar.isActive = true;
+            this.command.initializeWebSocketServer();
+            this.command.registerEvents();
             vscode.window.showInformationMessage('Sincronização iniciada!');
             statusBar.terminal = vscode.window.createTerminal('clover-sync');
             statusBar.terminal.show();
-            this.command.runScript(statusBar);
             statusBar.terminal.sendText('echo "Sincronização iniciada!"');
         }
+
+        // Atualizar a barra de status
+        this.updateStatusBar(statusBar.isActive, statusBar.statusBarItem);
+    }
+
+    public dispose() {
+        this.command.dispose();
     }
 }

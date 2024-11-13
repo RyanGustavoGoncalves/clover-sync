@@ -1,48 +1,201 @@
+// Command.ts
 import * as vscode from 'vscode';
-import { Client, IMessage } from '@stomp/stompjs';
-import SockJS from 'sockjs-client';
-import { StatusBar } from '../controller/StatusBar';
+import WebSocket, { WebSocketServer } from 'ws';
+import * as fs from 'fs';
+import * as path from 'path';
 
 export class Command {
-    private stompClient: Client | undefined;
+    private wss: WebSocketServer | null = null;
+    private context: vscode.ExtensionContext;
 
-    public runScript(statusBar: StatusBar): void {
-        if (this.stompClient && this.stompClient.active) {
-            // Desconectar
-            this.stompClient.deactivate();
-            this.stompClient = undefined;
-            vscode.window.showInformationMessage('Conexão STOMP encerrada.');
-        } else {
-            // Conectar
-            statusBar.isActive = true;
+    constructor(context: vscode.ExtensionContext) {
+        this.context = context;
+    }
 
-            const socketUrl = 'http://localhost:8080/ws';
-            const socket = new SockJS(socketUrl);
+    public initializeWebSocketServer() {
+        this.wss = new WebSocketServer({ port: 8090 });
+        this.wss.on('connection', (ws: WebSocket) => {
+            console.log('Frontend conectado ao servidor WebSocket');
 
-            this.stompClient = new Client({
-                webSocketFactory: () => socket as any,
-                debug: (str) => {
-                    console.log(str);
-                },
-                onConnect: () => {
-                    vscode.window.showInformationMessage('Conexão STOMP estabelecida.');
-
-                    // Inscrever-se em um tópico
-                    this.stompClient!.subscribe('/topic/respostas', (message: IMessage) => {
-                        const mensagem = message.body;
-                        vscode.window.showInformationMessage(`Mensagem recebida: ${mensagem}`);
-                    });
-
-                    // Enviar uma mensagem
-                    const msg = { nome: 'SeuNome' };
-                    this.stompClient!.publish({ destination: '/app/mensagem', body: JSON.stringify(msg) });
-                },
-                onStompError: (frame) => {
-                    vscode.window.showErrorMessage(`Erro STOMP: ${frame.headers['message']}`);
-                },
+            ws.on('message', (message: string) => {
+                console.log('Mensagem recebida do frontend:', message);
+                const data = JSON.parse(message);
+                console.log('Data:', data);
+                if (data.type === 'syncFile') {
+                    this.handleSyncFile(data.payload, ws);
+                }
             });
 
-            this.stompClient.activate();
+            ws.on('close', () => {
+                console.log('Conexão WebSocket fechada');
+            });
+
+            ws.on('error', (error) => {
+                console.error('Erro no WebSocket:', error);
+            });
+        });
+
+        console.log('Servidor WebSocket iniciado em ws://localhost:8080');
+    }
+
+    private async handleSyncFile(payload: any, ws: WebSocket) {
+        const { idProject, projectName, idFile, fileContent, fileName } = payload;
+
+        if (!idProject || !projectName || !idFile || !fileContent || !fileName) {
+            ws.send(JSON.stringify({ type: 'error', message: 'Payload incompleto.' }));
+            return;
+        }
+
+        try {
+            const workspaceFolders = vscode.workspace.workspaceFolders;
+            if (!workspaceFolders) {
+                ws.send(JSON.stringify({ type: 'error', message: 'Nenhum workspace aberto no VSCode.' }));
+                return;
+            }
+            const workspacePath = workspaceFolders[0].uri.fsPath;
+
+            const cloverPath = path.join(workspacePath, 'Clover');
+
+            await fs.promises.mkdir(cloverPath, { recursive: true });
+
+            const projectPath = path.join(cloverPath, projectName);
+
+            await fs.promises.mkdir(projectPath, { recursive: true });
+
+            const projectJsonPath = path.join(cloverPath, 'project.json');
+
+            if (!fs.existsSync(projectJsonPath)) {
+                const projectData = {
+                    projects: [
+                        {
+                            id: idProject,
+                            name: projectName
+                        }
+                    ]
+                };
+                await fs.promises.writeFile(projectJsonPath, JSON.stringify(projectData, null, 2), 'utf-8');
+            } else {
+                const projectJsonData = JSON.parse(await fs.promises.readFile(projectJsonPath, 'utf-8'));
+                const projectExists = projectJsonData.projects.some((proj: any) => proj.id === idProject);
+                if (!projectExists) {
+                    projectJsonData.projects.push({ id: idProject, name: projectName });
+                    await fs.promises.writeFile(projectJsonPath, JSON.stringify(projectJsonData, null, 2), 'utf-8');
+                }
+            }
+
+            const filePath = path.join(projectPath, fileName);
+
+            await fs.promises.writeFile(filePath, fileContent, 'utf-8');
+
+            const dataFilesPath = path.join(projectPath, 'dataFiles.json');
+
+            let dataFiles = [];
+            if (fs.existsSync(dataFilesPath)) {
+                const data = await fs.promises.readFile(dataFilesPath, 'utf-8');
+                dataFiles = JSON.parse(data);
+            }
+
+            const fileIndex = dataFiles.findIndex((file: any) => file.id === idFile);
+            const syncedAt = new Date().toISOString();
+            const fileData = {
+                id: idFile,
+                name: fileName,
+                syncedAt: syncedAt
+            };
+
+            if (fileIndex !== -1) {
+                dataFiles[fileIndex] = fileData;
+            } else {
+                dataFiles.push(fileData);
+            }
+
+            await fs.promises.writeFile(dataFilesPath, JSON.stringify(dataFiles, null, 2), 'utf-8');
+
+            const document = await vscode.workspace.openTextDocument(filePath);
+            await vscode.window.showTextDocument(document, { preview: false });
+
+            ws.send(JSON.stringify({ type: 'success', message: 'Arquivo sincronizado e aberto no VSCode.' }));
+        } catch (error) {
+            console.error('Erro ao sincronizar arquivo:', error);
+            ws.send(JSON.stringify({ type: 'error', message: 'Erro ao sincronizar o arquivo.' }));
+        }
+    }
+
+    public registerEvents() {
+        vscode.workspace.onDidSaveTextDocument((document: vscode.TextDocument) => {
+            this.handleDocumentSave(document);
+        });
+    }
+
+    private async handleDocumentSave(document: vscode.TextDocument) {
+        if (this.wss && this.wss.clients.size > 0) {
+            try {
+                const fileContent = document.getText();
+                const filePath = document.uri.fsPath;
+                const relativePath = vscode.workspace.asRelativePath(filePath);
+
+                const cloverPath = path.join(vscode.workspace.workspaceFolders![0].uri.fsPath, 'Clover');
+                const projectJsonPath = path.join(cloverPath, 'project.json');
+
+                if (!fs.existsSync(projectJsonPath)) {
+                    console.warn('project.json não encontrado. Ignorando envio.');
+                    return;
+                }
+
+                const projectJsonData = JSON.parse(await fs.promises.readFile(projectJsonPath, 'utf-8'));
+                const project = projectJsonData.projects.find((proj: any) => {
+                    const projectFolder = path.join(cloverPath, proj.name);
+                    return filePath.startsWith(projectFolder);
+                });
+
+                if (!project) {
+                    console.warn('Projeto correspondente não encontrado para o arquivo salvo.');
+                    return;
+                }
+
+                const fileName = path.basename(filePath);
+                const dataFilesPath = path.join(path.dirname(filePath), 'dataFiles.json');
+
+                if (!fs.existsSync(dataFilesPath)) {
+                    console.warn('dataFiles.json não encontrado. Ignorando envio.');
+                    return;
+                }
+
+                const dataFilesData = JSON.parse(await fs.promises.readFile(dataFilesPath, 'utf-8'));
+                const fileMetaData = dataFilesData.find((file: any) => file.name === fileName);
+
+                if (!fileMetaData) {
+                    console.warn('Arquivo não listado em dataFiles.json. Ignorando envio.');
+                    return;
+                }
+
+                const message = JSON.stringify({
+                    type: 'fileSaved',
+                    payload: {
+                        projectId: project.id,
+                        projectName: project.name,
+                        fileId: fileMetaData.id,
+                        filePath: relativePath,
+                        fileContent: fileContent
+                    }
+                });
+
+                this.wss.clients.forEach((client) => {
+                    if (client.readyState === WebSocket.OPEN) {
+                        client.send(message);
+                    }
+                });
+
+                console.log(`Enviado conteúdo atualizado do arquivo: ${relativePath} para o frontend`);
+            } catch (error) {
+                console.error('Erro ao processar salvamento de documento:', error);
+            }
+        }
+    }
+
+    public dispose() {
+        if (this.wss) {
+            this.wss.close();
         }
     }
 }

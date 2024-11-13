@@ -1,3 +1,4 @@
+// extension.ts
 import * as vscode from 'vscode';
 import { StatusBar } from './controller/StatusBar';
 

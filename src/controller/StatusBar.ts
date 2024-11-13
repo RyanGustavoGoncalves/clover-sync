@@ -1,8 +1,9 @@
+// StatusBar.ts
 import * as vscode from 'vscode';
 import { StatusBarService } from '../service/StatusBarService';
 
 export class StatusBar {
-    private statusBarItem: vscode.StatusBarItem;
+    public statusBarItem: vscode.StatusBarItem;
     public isActive: boolean = false;
     public terminal: vscode.Terminal | undefined;
     private service: StatusBarService;
@@ -10,7 +11,7 @@ export class StatusBar {
     constructor(context: vscode.ExtensionContext) {
         this.statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
         this.statusBarItem.command = 'clover-sync.runScript';
-        this.service = new StatusBarService();
+        this.service = new StatusBarService(context);
         this.updateStatusBar();
         this.statusBarItem.show();
 
@@ -31,5 +32,6 @@ export class StatusBar {
         if (this.terminal) {
             this.terminal.dispose();
         }
+        this.service.dispose();
     }
 }
