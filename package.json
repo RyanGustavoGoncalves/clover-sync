@@ -1,9 +1,9 @@
 {
   "name": "clover-sync",
   "displayName": "Clover Sync",
-  "description": "Sincronizar script",
+  "description": "Sincronize e gerencie scripts entre o Visual Studio Code e aplicações frontend com facilidade. Esta extensão permite que desenvolvedores sincronizem seus scripts diretamente com o editor VS Code, editem os arquivos, adicionem mensagens de commit, e sincronizem automaticamente as mudanças com a aplicação frontend. Com um sistema de controle e organização de pastas, é ideal para equipes que precisam manter scripts e arquivos em sincronização em tempo real, garantindo uma experiência de edição rápida e integrada.",
   "version": "0.0.1",
-  "publisher": "seu_nome_ou_empresa",
+  "publisher": "clover",
   "engines": {
     "vscode": "^1.95.0"
   },
@@ -11,7 +11,7 @@
     "Other"
   ],
   "activationEvents": [
-    "onCommand:clover-sync.runScript"
+    "*"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -33,7 +33,9 @@
   "devDependencies": {
     "@types/mocha": "^10.0.9",
     "@types/node": "20.x",
+    "@types/sockjs-client": "^1.5.4",
     "@types/vscode": "^1.95.0",
+    "@types/ws": "^8.5.13",
     "@typescript-eslint/eslint-plugin": "^8.10.0",
     "@typescript-eslint/parser": "^8.7.0",
     "@vscode/test-cli": "^0.0.10",
@@ -42,6 +44,9 @@
     "typescript": "^5.6.3"
   },
   "dependencies": {
-    "clover-sync": "file:"
+    "@stomp/stompjs": "^7.0.0",
+    "clover-sync": "file:",
+    "sockjs-client": "^1.6.1",
+    "ws": "^8.18.0"
   }
 }
