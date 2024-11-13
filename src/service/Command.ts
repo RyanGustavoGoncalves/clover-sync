@@ -39,7 +39,7 @@ export class Command {
     }
 
     private async handleSyncFile(payload: any, ws: WebSocket) {
-        const { idProject, projectName, idFile, fileContent, fileName } = payload;
+        const { idProject, projectName, idFile, fileContent, fileName, commitMessage } = payload;
 
         if (!idProject || !projectName || !idFile || !fileContent || !fileName) {
             ws.send(JSON.stringify({ type: 'error', message: 'Payload incompleto.' }));
@@ -100,7 +100,8 @@ export class Command {
             const fileData = {
                 id: idFile,
                 name: fileName,
-                syncedAt: syncedAt
+                syncedAt: syncedAt,
+                commitMessage: commitMessage || 'Sem mensagem de commit.'
             };
 
             if (fileIndex !== -1) {
@@ -122,16 +123,16 @@ export class Command {
     }
 
     public registerEvents() {
-        vscode.workspace.onDidSaveTextDocument((document: vscode.TextDocument) => {
-            this.handleDocumentSave(document);
+        vscode.workspace.onWillSaveTextDocument(async (event: vscode.TextDocumentWillSaveEvent) => {
+            await this.handleWillSaveDocument(event);
         });
     }
 
-    private async handleDocumentSave(document: vscode.TextDocument) {
+    private async handleWillSaveDocument(event: vscode.TextDocumentWillSaveEvent) {
         if (this.wss && this.wss.clients.size > 0) {
             try {
-                const fileContent = document.getText();
-                const filePath = document.uri.fsPath;
+                const fileContent = event.document.getText();
+                const filePath = event.document.uri.fsPath;
                 const relativePath = vscode.workspace.asRelativePath(filePath);
 
                 const cloverPath = path.join(vscode.workspace.workspaceFolders![0].uri.fsPath, 'Clover');
@@ -169,6 +170,20 @@ export class Command {
                     return;
                 }
 
+                const commitMessage = await vscode.window.showInputBox({
+                    prompt: 'Digite uma mensagem para o commit',
+                    placeHolder: 'Mensagem de commit',
+                    validateInput: (text) => text.trim().length > 0 ? null : 'A mensagem de commit não pode estar vazia.'
+                });
+
+                if (!commitMessage) {
+                    vscode.window.showWarningMessage('Commit cancelado. É necessário uma mensagem de commit para salvar.');
+                    event.waitUntil(new Promise<void>((resolve) => {
+                        resolve();
+                    }));
+                    return;
+                }
+
                 const message = JSON.stringify({
                     type: 'fileSaved',
                     payload: {
@@ -176,7 +191,8 @@ export class Command {
                         projectName: project.name,
                         fileId: fileMetaData.id,
                         filePath: relativePath,
-                        fileContent: fileContent
+                        fileContent: fileContent,
+                        commitMessage: commitMessage
                     }
                 });
 
@@ -186,7 +202,7 @@ export class Command {
                     }
                 });
 
-                console.log(`Enviado conteúdo atualizado do arquivo: ${relativePath} para o frontend`);
+                console.log(`Enviado conteúdo atualizado do arquivo: ${relativePath} para o frontend com mensagem de commit: "${commitMessage}"`);
             } catch (error) {
                 console.error('Erro ao processar salvamento de documento:', error);
             }
