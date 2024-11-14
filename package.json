@@ -16,7 +16,7 @@
   ],
   "icon": "./assets/cloverSync.png",
   "activationEvents": [
-    "*"
+    "onCommand:clover-sync.runScript"
   ],
   "main": "./out/extension.js",
   "contributes": {
