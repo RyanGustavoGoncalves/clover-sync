@@ -2,7 +2,7 @@
   "name": "clover-sync",
   "displayName": "Clover Sync",
   "description": "Sincronize e gerencie scripts entre o Visual Studio Code e aplicações frontend com facilidade. Esta extensão permite que desenvolvedores sincronizem seus scripts diretamente com o editor VS Code, editem os arquivos, adicionem mensagens de commit, e sincronizem automaticamente as mudanças com a aplicação frontend. Com um sistema de controle e organização de pastas, é ideal para equipes que precisam manter scripts e arquivos em sincronização em tempo real, garantindo uma experiência de edição rápida e integrada.",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "publisher": "CloverOrganization",
   "engines": {
     "vscode": "^1.95.0"

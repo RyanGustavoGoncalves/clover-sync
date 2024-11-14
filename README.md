@@ -28,6 +28,6 @@ Esta extensão adiciona a seguinte configuração:
 
 ## Release Notes
 
-### 0.0.2
+### 0.0.3
 
 - **Sincronização Básica**: Primeira versão com suporte à sincronização de arquivos, estrutura de pastas organizada e controle de versões com mensagens de commit.
