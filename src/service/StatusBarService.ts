@@ -25,19 +25,12 @@ export class StatusBarService {
             // Parar a sincronização
             statusBar.isActive = false;
             vscode.window.showInformationMessage('Sincronização parada!');
-            if (statusBar.terminal) {
-                statusBar.terminal.dispose();
-                statusBar.terminal = undefined;
-            }
         } else {
             // Iniciar a sincronização
             statusBar.isActive = true;
             this.command.initializeWebSocketServer();
             this.command.registerEvents();
             vscode.window.showInformationMessage('Sincronização iniciada!');
-            statusBar.terminal = vscode.window.createTerminal('clover-sync');
-            statusBar.terminal.show();
-            statusBar.terminal.sendText('echo "Sincronização iniciada!"');
         }
 
         // Atualizar a barra de status

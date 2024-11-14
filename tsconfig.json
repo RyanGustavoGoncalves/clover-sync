@@ -1,17 +1,10 @@
 {
 	"compilerOptions": {
-		"typeRoots": [
-			"./node_modules/@types",
-			"./src/types"
-		],
-		"moduleResolution": "Node",
-		"esModuleInterop": true,
-		"module": "CommonJS",
+		"module": "Node16",
 		"target": "ES2022",
 		"outDir": "out",
 		"lib": [
-			"ES2022",
-			"DOM"
+			"ES2022"
 		],
 		"sourceMap": true,
 		"rootDir": "src",
