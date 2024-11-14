@@ -10,6 +10,7 @@ Sincronize e gerencie scripts entre o Visual Studio Code e a aplicação Clover 
 - **Notificações e Logs**: Receba notificações e logs detalhados para acompanhar cada sincronização e commit realizados.
 
 ![Sincronização em Tempo Real](./assets/cloverSync.png)
+![Sincronização em Tempo Real](./assets/p1.png)
 
 ## Requirements
 
