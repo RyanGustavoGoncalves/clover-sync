@@ -15,9 +15,7 @@
     "Other"
   ],
   "icon": "./assets/cloverSync.png",
-  "activationEvents": [
-    "onCommand:clover-sync.runScript"
-  ],
+  "activationEvents": [],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
