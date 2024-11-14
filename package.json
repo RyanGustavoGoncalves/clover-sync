@@ -2,7 +2,7 @@
   "name": "clover-sync",
   "displayName": "Clover Sync",
   "description": "Clover Sync facilitates the synchronization of scripts and files between VS Code and Clover application, allowing developers to work in an integrated and organized manner. With it, you can edit files, add Commit messages, and synchronize updates automatically. Ideal to work on the comfort of your VS Code",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "publisher": "CloverOrganization",
   "engines": {
     "vscode": "^1.95.0"
