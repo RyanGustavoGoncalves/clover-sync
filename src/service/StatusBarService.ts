@@ -15,7 +15,7 @@ export class StatusBarService {
             statusBarItem.text = `$(sync~spin) Clover Sync - Ativo`;
             statusBarItem.tooltip = 'Clique para parar a sincronização';
         } else {
-            statusBarItem.text = `$(rocket) Clover Sync - Inativo`;
+            statusBarItem.text = `$(sync-ignored) Clover Sync - Inativo`;
             statusBarItem.tooltip = 'Clique para iniciar a sincronização';
         }
     }
